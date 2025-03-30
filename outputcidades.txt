@@ -1,0 +1,14 @@
+Numero de cidades:11
+Foram alocados 576 bytes para a lista!
+Formato <NOME> <LATITUDE> <lONGITUDE>
+Aveiro 40.6389 -8.6553
+Braga 41.5333 -8.4167
+Braganca 29 42
+Leiria 39.7431 -8.8069
+Lisboa 38.7452 -9.1604
+Porto 41.1495 -8.6108
+Porto_Salvo 55 54
+Porto_Santo 54 55
+Santarem 39.2369 -8.685
+Setubal 38.5243 -8.8926
+Vila_Real 41.2959 -7.74635

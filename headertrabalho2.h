@@ -2,6 +2,7 @@
 #define HEADER_TRAB2
 
 #define MAX 25
+#define CODIGO_CONTADOR_LINHA_ADI -1 /*Usar quando for para adicionar a cidade extra do -ADI 'a lista!*/
 #define MAXIMO_DE_ARGUMENTOS 14
 
 #define SEM_ROTA -123456789

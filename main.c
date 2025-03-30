@@ -115,7 +115,6 @@ int compara_alfabeticamente(char Abc[], char Def[]){
 | Accao: dada uma lista e um ponteiro do bloco de cidade a ser inserido na lista, encontrar o local em que este novo bloco deve ser inserido na lista para a mesma estar disposta por ordem alfabética
 | Exemplo de lista criada neste método: topo->|Null_Island|->|Aveiro|->|Braga|->|Bruxelas|->|Coimbra|->|Lisboa|...
 | Return: Ponteiro do bloco anterior ao ponto de insersao!
-| RETURN NULL se a cidade a inserir tiver o mesmo nome de uma cidade presente na lista!
 +---------------------------------------*/
 BLOCOCIDADE * encontrar_ponto_insersao_alfabeticamente(BLOCOCIDADE * topolista, BLOCOCIDADE * novo){
     BLOCOCIDADE * anterior;
@@ -126,39 +125,35 @@ BLOCOCIDADE * encontrar_ponto_insersao_alfabeticamente(BLOCOCIDADE * topolista, 
     /*Desloca o pointer anterior para a posicao anterior ao bloco que deve inserir, ou seja, o proximo bloco ja' tem uma cidade com o nome à frente no abecedario!
     Pelo compara_alfabeticamente dar return de 1 quando ambas as strings sao iguais, o ponteiro fica a apontar para o bloco com o mesmo nome do bloco novo nesse cenario*/
     for(anterior = topolista; ((anterior->prox != NULL) && (compara_alfabeticamente(anterior->prox->cidade.nome, novo->cidade.nome))); anterior = anterior->prox){}
-    /*Aproveitar a ocasiao para verificar se estamos a acrescentar 'a lista uma localidade que ja' la' esta!*/
-    if(strcmp(anterior->cidade.nome, novo->cidade.nome) == 0){
-        printf("AVISO: a localidade %s encontra-se duplicada pelo argumento -ADI ou no localidades.txt!\n",novo->cidade.nome);
-        anterior = NULL;
-        return anterior;
-    }
     return anterior;
 }
 
 /*--------------------------------------
 | Nome: insere_na_lista_cidades_alfabeticamente
 | Accao: dada uma cidade completamente definida, inseri-la na lista dinamica por ordem alfabetica
+| Terceiro parametro: contador da posicao da linha do ficheiro a ser lida para indicar no aviso caso essa linha se encontre duplicada!
+| Colocar nesse parametro negativo se for para inserir pelo -ADI! Zero caso seja desnecessario
 | Exemplo de lista criada neste método: topo->|Null_Island|->|Aveiro|->|Braga|->|Bruxelas|->|Coimbra|->|Lisboa|...
 +---------------------------------------*/
-void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir){
+void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir, int contador_linha){
     BLOCOCIDADE * novo;
-    BLOCOCIDADE * anterior_ao_ponto_insersao;
+    BLOCOCIDADE * anterior_insersao;
 
     novo = (BLOCOCIDADE *) calloc(1, sizeof(BLOCOCIDADE));
     validar_calloc(novo);
     novo->cidade = cidade_por_inserir;
-    anterior_ao_ponto_insersao = encontrar_ponto_insersao_alfabeticamente(topo, novo);
-    
-    if(anterior_ao_ponto_insersao == NULL){
+    anterior_insersao = encontrar_ponto_insersao_alfabeticamente(topo, novo);
+    /*Aproveitar a ocasiao para verificar se estamos a acrescentar 'a lista uma localidade que ja' la' esta!*/
+    if(strcmp(anterior_insersao->cidade.nome, novo->cidade.nome) == 0){
+        printf("AVISO: localidades.txt -> linha %d: a localidade %s encontra-se duplicada pelo argumento -ADI (linha negativa) ou no localidades.txt (linha positiva)!\n",contador_linha, novo->cidade.nome);
         free(novo);
         novo = NULL;
     }
-    /*O codigo abaixo so deve ser executada quando a cidade por adicionar nao e' nenhum duplicado do que ja' esta' na lista!, ou seja, quando o encontrar_ponto_insersao_alfabeticamente(topo, novo) nao da return de NULL*/
+    /*O codigo abaixo so deve ser executada quando a cidade por adicionar nao e' nenhum duplicado do que ja' esta' na lista!*/
     else{
-        novo->prox = anterior_ao_ponto_insersao->prox;
-        anterior_ao_ponto_insersao->prox = novo;
+        novo->prox = anterior_insersao->prox;
+        anterior_insersao->prox = novo;
     }
-    /*mostrar_lista_cidades(topo);*/
 }
 
 
@@ -242,7 +237,7 @@ BLOCOCIDADE * TL_ler_cidades(void){
             erro = 1;
         }
         else
-            insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria);
+            insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria, linha);
         linha++;
     }
     fclose(ficheirolocalidades);
@@ -253,6 +248,10 @@ BLOCOCIDADE * TL_ler_cidades(void){
     return listatopo;
 }
 
+/*--------------------------------------
+| Nome: LO_escrever_cidades
+| Accao: escreve o ficheiro de output dos dados da lista das cidades para o argumento -LO
++---------------------------------------*/
 void LO_escrever_cidades(char nomeficheiro[], BLOCOCIDADE * lista){
     FILE * outputcidades;
     BLOCOCIDADE * step;

@@ -5,6 +5,8 @@ Braga 41.5333 -8.4167
 Braga 41.5333 -8.4167
 Braga 41.5333 -8.4167
 Braganca 29.0 42.0
+Porto_Santo 54 55
+Porto_Salvo 55 54
 
 Setubal 38.5243 -8.8926
 Aveiro 40.6389 -8.6553
