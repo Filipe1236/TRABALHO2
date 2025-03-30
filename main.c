@@ -85,14 +85,15 @@ BLOCOCIDADE * criar_lista_cidades(void){
 | Accao: dadas duas strings, verifica se a segunda encontra-se mais para a frente no alfabeto do que a primeira
 | Por exemplo compara_alfabeticamente("Aveiro", "Coimbra") == 1, evidente logo pela primeira letra, 'C' > 'A'
 | Ja compara_alfabeticamente("Porto_Santo", "Porto_Salvo") == 0, neste caso sendo mais dificil por maioria dos caracteres coincidirem! Já que 'l' da segunda string < 'n' da primeira
-| Return: 1 se a segunda string encontrar-se mais para a frente no alfabeto do que a primeira.
+| Return: 1 se a segunda string encontrar-se mais para a frente no alfabeto do que a primeira ou se ambas forem exatamente iguais!
 | Caso contrario, return 0
-| Se ambas as strings forem exatamente iguais, return -1
 +---------------------------------------*/
 int compara_alfabeticamente(char Abc[], char Def[]){
     int i;
-    if(strcmp(Abc, Def) == 0)
-        return -1;
+    /*if(strcmp(Abc, Def) == 0){
+        printf("São iguais!\n");
+        return 2;
+    }*/
     
     for(i = 0; (Abc[i]!= '\0') || (Def[i] != '\0'); i++){
         if (Def[i] > Abc[i])
@@ -102,7 +103,8 @@ int compara_alfabeticamente(char Abc[], char Def[]){
     }
     
     /*Ao fim do loop, se uma string terminar mas os caracteres das duas estarem sempre a coincidir, por exemplo, Porto e Porto_Salvo, a string maior sera a mais avancada no alfabeto*/
-    if(strlen(Def) > strlen(Abc))
+    /*Vai dar return de 1 se forem exatamente iguais*/
+    if(strlen(Def) >= strlen(Abc))
         return 1;
     else
         return 0;
@@ -121,13 +123,14 @@ BLOCOCIDADE * encontrar_ponto_insersao_alfabeticamente(BLOCOCIDADE * topolista, 
     if(topolista->prox == NULL){
         return topolista;
     }
-    for(anterior = topolista; ((anterior->prox != NULL) && (compara_alfabeticamente(anterior->prox->cidade.nome, novo->cidade.nome)== 1)); anterior = anterior->prox){
-        /*Aproveitar a ocasiao para verificar se estamos a acrescentar 'a lista uma localidade que ja la esta!*/
-        if(compara_alfabeticamente(anterior->prox->cidade.nome, novo->cidade.nome) == -1){
-            printf("AVISO: a localidade %s encontra-se duplicada pelo argumento -ADI ou no localidades.txt!\n",novo->cidade.nome);
-            anterior = NULL;
-            return anterior;
-        }
+    /*Desloca o pointer anterior para a posicao anterior ao bloco que deve inserir, ou seja, o proximo bloco ja' tem uma cidade com o nome à frente no abecedario!
+    Pelo compara_alfabeticamente dar return de 1 quando ambas as strings sao iguais, o ponteiro fica a apontar para o bloco com o mesmo nome do bloco novo nesse cenario*/
+    for(anterior = topolista; ((anterior->prox != NULL) && (compara_alfabeticamente(anterior->prox->cidade.nome, novo->cidade.nome))); anterior = anterior->prox){}
+    /*Aproveitar a ocasiao para verificar se estamos a acrescentar 'a lista uma localidade que ja' la' esta!*/
+    if(strcmp(anterior->cidade.nome, novo->cidade.nome) == 0){
+        printf("AVISO: a localidade %s encontra-se duplicada pelo argumento -ADI ou no localidades.txt!\n",novo->cidade.nome);
+        anterior = NULL;
+        return anterior;
     }
     return anterior;
 }
@@ -145,12 +148,17 @@ void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_
     validar_calloc(novo);
     novo->cidade = cidade_por_inserir;
     anterior_ao_ponto_insersao = encontrar_ponto_insersao_alfabeticamente(topo, novo);
-    /*O codigo abaixo so deve ser executada quando a cidade por adicionar nao e' nenhum duplicado do que ja' esta' na lista!, ou seja, quando o encontrar_ponto_insersao_alfabeticamente(topo, novo) nao da return de NULL*/
-    if(anterior_ao_ponto_insersao != NULL){
-    novo->prox = anterior_ao_ponto_insersao->prox;
-    anterior_ao_ponto_insersao->prox = novo;
+    
+    if(anterior_ao_ponto_insersao == NULL){
+        free(novo);
+        novo = NULL;
     }
-    mostrar_lista_cidades(topo);
+    /*O codigo abaixo so deve ser executada quando a cidade por adicionar nao e' nenhum duplicado do que ja' esta' na lista!, ou seja, quando o encontrar_ponto_insersao_alfabeticamente(topo, novo) nao da return de NULL*/
+    else{
+        novo->prox = anterior_ao_ponto_insersao->prox;
+        anterior_ao_ponto_insersao->prox = novo;
+    }
+    /*mostrar_lista_cidades(topo);*/
 }
 
 
@@ -178,6 +186,30 @@ void mostrar_lista_cidades(BLOCOCIDADE * topo){
         printf("|%s|->", step->cidade.nome);
     }
     putchar('\n');
+}
+
+/*--------------------------------------
+| Nome: conta_cidades_da_lista
+| Accao: percorre a lista toda e conta quantas cidades estao la', incluindo a Null_Island, que serviu como registo separado para a base!!
+| RETURN: numero total de elementos da lista!
++---------------------------------------*/
+int conta_cidades_da_lista(BLOCOCIDADE * topo){
+    int elementos = 0;
+    for(; topo != NULL; topo = topo->prox, elementos++){}
+    return elementos;
+}
+
+/*--------------------------------------
+| Nome: libertar_lista
+| Accao: liberta todos os blocos alocados de uma lista
++---------------------------------------*/
+void libertar_lista(BLOCOCIDADE ** topo){
+    BLOCOCIDADE * step;
+    while(*topo != NULL){
+        step = *topo;
+        *topo = (*topo)->prox;
+        free(step);
+    }
 }
 
 /*--------------------------------------
@@ -221,10 +253,32 @@ BLOCOCIDADE * TL_ler_cidades(void){
     return listatopo;
 }
 
+void LO_escrever_cidades(char nomeficheiro[], BLOCOCIDADE * lista){
+    FILE * outputcidades;
+    BLOCOCIDADE * step;
+    int elementos_lista_contados = conta_cidades_da_lista(lista);
+    int numerocidades = elementos_lista_contados - 1;
+    int bytes_alocados_lista = elementos_lista_contados * sizeof(BLOCOCIDADE); /*Obs: o sizeof costuma funcionar melhor com o tipo size_t, mas parece que alguns compiladores nao o reconhecem (foi o meu caso), por isso fui pelo int, mais universal!*/
+    outputcidades = fopen(nomeficheiro, "w");
+    if(outputcidades == NULL){
+        fprintf(stderr, "ERRO: nao foi possivel escrever ficheiro de output, por favor verificar permissoes!\n");
+        exit(-1);
+    }
+    fprintf(outputcidades, "Numero de cidades:%d\n",numerocidades);
+    fprintf(outputcidades, "Foram alocados %d bytes para a lista!\n", bytes_alocados_lista);
+    fprintf(outputcidades, "Formato <NOME> <LATITUDE> <lONGITUDE>\n");
+    for(step = lista->prox; step != NULL; step = step->prox){
+        fprintf(outputcidades, "%s %g %g\n", step->cidade.nome, step->cidade.latitude, step->cidade.longitude);
+    }
+    fclose(outputcidades);
+}
+
 
 int main(int argc, char * argv[]){
     BLOCOCIDADE * lista;
     lista = TL_ler_cidades();
+    LO_escrever_cidades("outputcidades.txt", lista);
     mostrar_lista_cidades(lista);
+    libertar_lista(&lista);
     return 0;
 }
