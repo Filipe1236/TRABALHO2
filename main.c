@@ -208,7 +208,7 @@ void libertar_lista(BLOCOCIDADE ** topo){
 }
 
 /*--------------------------------------
-| Nome: TL_ler_config
+| Nome: TL_ler_cidades
 | Accao: tenta ler o ficheiro localidades.txt e vai colocando as cidades lidas na lista por ordem alfabetica.
 | OBS: NAO ESQUECER OS AVISOS de erros no ficheiro!
 | RETURN DO POINTER DA LISTA DE CIDADES!
@@ -272,11 +272,37 @@ void LO_escrever_cidades(char nomeficheiro[], BLOCOCIDADE * lista){
     fclose(outputcidades);
 }
 
+/*TESTES DE DEBUG_____________________*/
+BLOCOCIDADE * procurar_cidade(BLOCOCIDADE * lista, char nome_procurado[]){
+    BLOCOCIDADE * step, * aux;
+    step = lista;
+    for(;(step != NULL)&&(strcmp(step->cidade.nome,nome_procurado));step = step->prox);
+    for(aux = lista; aux->prox != step; aux = aux->prox);
+
+    return aux;
+}
+
+void remover_da_listacidades(BLOCOCIDADE * lista, char nome_a_remover[]){
+    BLOCOCIDADE * ant_remover, * remover;
+    ant_remover = procurar_cidade(lista, nome_a_remover);
+    remover = ant_remover->prox;
+    if(remover==NULL)
+        printf("Nao foi encontrada uma cidade com esse nome.\n");
+    else{
+        ant_remover->prox = remover->prox;
+        free(remover);
+    }
+}
+
+
+/*_________________________*/
 
 int main(int argc, char * argv[]){
     BLOCOCIDADE * lista;
     lista = TL_ler_cidades();
     LO_escrever_cidades("outputcidades.txt", lista);
+    mostrar_lista_cidades(lista);
+    remover_da_listacidades(lista, "Porto");
     mostrar_lista_cidades(lista);
     libertar_lista(&lista);
     return 0;
