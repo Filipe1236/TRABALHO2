@@ -53,10 +53,10 @@ void mostrar_utilizacao(void){
 
 /*--------------------------------------
 | Nome: validar_calloc
-| Accao: Verifica se a alocacao de memoria teve sucesso
+| Accao: Verifica se a alocacao de memoria teve sucesso.
 +---------------------------------------*/
-void validar_calloc(BLOCOCIDADE * pointer_blococidade){
-    if(pointer_blococidade == NULL){
+void validar_calloc(void * pointer){
+    if(pointer == NULL){
         fprintf(stderr, "ERRO: Falha ao alocar memoria!\n");
         exit(-1);
     }
@@ -143,7 +143,7 @@ void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_
     anterior_insersao = encontrar_ponto_insersao_alfabeticamente(topo, novo);
     /*Aproveitar a ocasiao para verificar se estamos a acrescentar 'a lista uma localidade que ja' la' esta!*/
     if(strcmp(anterior_insersao->cidade.nome, novo->cidade.nome) == 0){
-        printf("AVISO: localidades.txt -> linha %d: a localidade %s encontra-se duplicada pelo argumento -ADI (linha negativa) ou no localidades.txt (linha positiva)!\n",contador_linha, novo->cidade.nome);
+        printf("AVISO: localidades.txt -> linha %d: a localidade %s encontra-se duplicada no localidades.txt!\n",contador_linha, novo->cidade.nome);
         free(novo);
         novo = NULL;
     }
@@ -193,7 +193,7 @@ int conta_cidades_da_lista(BLOCOCIDADE * topo){
 
 /*--------------------------------------
 | Nome: libertar_lista
-| Accao: liberta todos os blocos alocados de uma lista
+| Accao: liberta todos os blocos alocados da lista de cidades
 +---------------------------------------*/
 void libertar_lista(BLOCOCIDADE ** topo){
     BLOCOCIDADE * step;
@@ -207,7 +207,7 @@ void libertar_lista(BLOCOCIDADE ** topo){
 /*--------------------------------------
 | Nome: TL_ler_cidades
 | Accao: tenta ler o ficheiro localidades.txt e vai colocando as cidades lidas na lista por ordem alfabetica.
-| OBS: NAO ESQUECER OS AVISOS de erros no ficheiro!
+| OBS: NAO ESQUECER OS AVISOS de erros no ficheiro! ESTES SÓ APARECEM QUANDO O TL ESTIVER LÁ. CASO CONTRÁRIO, PODE HAVER ERROS, MAS A LEITURA CONTINUA
 | RETURN DO POINTER DA LISTA DE CIDADES!
 +---------------------------------------*/
 BLOCOCIDADE * TL_ler_cidades(void){
@@ -215,6 +215,7 @@ BLOCOCIDADE * TL_ler_cidades(void){
     char buffer [255];
     int linha = 1;
     int erro = 0;
+    int return_scan;
     CIDADE cidade_intermediaria;
     FILE * ficheirolocalidades;
     ficheirolocalidades = fopen("localidades.txt", "r");
@@ -225,20 +226,23 @@ BLOCOCIDADE * TL_ler_cidades(void){
     listatopo = criar_lista_cidades();
 
     while(fgets(buffer,255,ficheirolocalidades) != NULL){
-        if(buffer[0] == '\n'){
+        /*if((buffer[0] == '\n') || (buffer[0] == '\r')){
             buffer[0] = '\0';
+        }*/
+        if(((return_scan = SSCANF_LOCALIDADES) == 3) && (validar_coordenadas(cidade_intermediaria) == 0))
+            insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria, linha);
+        else if (validar_coordenadas(cidade_intermediaria)){
+            printf("Erro nos valores das coordenadas na linha %d.",linha);
+            erro = 1;
         }
-        else if(sscanf(buffer,"%s %f %f", cidade_intermediaria.nome, &(cidade_intermediaria.latitude), &(cidade_intermediaria.longitude)) != 3){
-            buffer[0] = '\0';
+        else if (return_scan > 0){
             printf("ERRO: localidades.txt -> linha %d: Erro no numero de parametros!\n", linha);
             erro = 1;
         }
-        if (validar_coordenadas(cidade_intermediaria)==1)
-            printf("Erro na leitura das coordenadas na liha %d.",linha);
-        else
-            insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria, linha);
+        buffer[0] = '\0';
         linha++;
     }
+
     fclose(ficheirolocalidades);
     if(erro)
         exit(-1);
@@ -326,13 +330,17 @@ float distancia_entre_cidades (CIDADE A, CIDADE B){
 | Accao: procura na lista de cidades a cidade com o nome especificado
 | Return: o pointer do BLOCOCIDADE com a cidade do nome indicado ou o anterior(o anterior e' capaz de ter mais utilidade, olha depois para a proxima funcao e decide)
 | RETURN NULL se a funcao percorrer a lista toda e nao encontrar a cidade com esse nome
+| Observação: foram deixados dois loops e dois apontadores auxiliares caso seja decidido alterar a função para dar return ao apontador do bloco que tem a cidade procurada ao invés do anterior.
 +---------------------------------------*/
 BLOCOCIDADE * procurar_cidade(BLOCOCIDADE * lista, char nome_procurado[]){
     BLOCOCIDADE * step, * aux;
     step = lista; 
-    for (;(step!=NULL)&&(strcmp(step->cidade.nome, nome_procurado));step = step->prox); 
+    for (;(step!=NULL)&&(strcmp(step->cidade.nome, nome_procurado) != 0);step = step->prox); 
+    /*Caso nao encontre, return de NULL*/
+    if(step == NULL)
+        return step;
+    /*Caso encontre, para dar return do anterior*/
     for(aux = lista; aux->prox != step; aux = aux->prox);/*faz com que exista um apontador a apontar para o anterior*/
-
     return aux;
 }
 
@@ -370,4 +378,217 @@ int compara_numericamente(float menor, float maior){
     if (menor <= maior)
         return 1;
     return 0;
+}
+
+/*FUNCOES PARA O CICLO DE LEITURA DO ROTAS.TXT E CONSTRUCAO DA LISTA COM AS ROTAS*/
+
+/*--------------------------------------
+| Nome: ciclo_leitura_rotas
+| Accao: depois da lista de cidades ter sido criada, ler o ficheiro rotas.txt e construir a lista de rotas. 
+| A lista de rotas será também uma lista com um registo separado para a base.
+| Return: apontador para o início da lista das rotas
++---------------------------------------*/
+ROTA * ciclo_leitura_rotas(BLOCOCIDADE * lista_cidades){
+    FILE * ficheirorotas;
+    ROTA * lista_rotas, * novo;
+    long posicao_inicial;
+    int numero_rota;
+    char buffer[255];
+    ficheirorotas = fopen("rotas.txt", "r");
+    if(ficheirorotas == NULL){
+        fprintf(stderr, "ERRO: o ficheiro rotas.txt nao existe!\n");
+        exit(-1);
+    }
+    lista_rotas = criar_lista_rotas();
+    while(fgets(buffer,255,ficheirorotas) != NULL){
+        /*if(buffer[0] == '\n')
+            buffer[0] = '\0';*/
+        if(sscanf(buffer,"#ROTA %d", &numero_rota)==1){
+            posicao_inicial = ftell(ficheirorotas); /*Tenho de guardar esta posicao no ficheiro porque depois vou avancar demais no construir_bloco_rota, por isso convem voltar atras, logo depois de encontrar o #ROTA serve*/
+            printf("Rota %d encontrada!\n", numero_rota);
+            buffer[0] = '\0';
+            novo = construir_bloco_rota(lista_cidades, ficheirorotas, numero_rota);
+            if(novo != NULL)
+                inserir_rota_distancia_crescente(lista_rotas, novo);
+            fseek(ficheirorotas, posicao_inicial, SEEK_SET); /*Voltar atras no ficheiro*/
+        }
+        else{
+            /*printf("%s",buffer);*/
+            buffer[0] = '\0';}
+    }
+    fclose(ficheirorotas);
+    return lista_rotas;
+}
+
+/*--------------------------------------
+| Nome: construir_bloco_rota
+| Accao: funcao auxiliar do ciclo_leitura_rotas: assim que o ciclo de leitura encontra um #ROTA, esta funcao passa a ser chamada para recolher o nome de todos os itinerarios e ir preenchendo todos os campos necessarios (primeiro o numero da rota, depois a lista de SUBROTA's, e por fim a distancia_total)
+| Return: apontador do bloco ROTA criado
+| Return NULL se a rota estiver vazia ou nao apresentar itinerarios contidos na lista de cidades (tem de haver correspondencia total nos nomes!). A propria funcao liberta o bloco criado nesse caso!
++---------------------------------------*/
+ROTA * construir_bloco_rota(BLOCOCIDADE * lista_cidades, FILE * ficheirorotas, int numero_rota){
+    char buffer[255];
+    int numero_itinerarios = 0;
+    ROTA * novo;
+    SUBROTA * aux_subrota;
+    novo = (ROTA *) calloc(1, sizeof(ROTA));
+    validar_calloc(novo);
+    novo->prox = NULL;
+    novo->numero = numero_rota;
+    novo->lista = criar_lista_subrotas(lista_cidades);
+    aux_subrota = novo->lista;
+    while((fgets(buffer,255, ficheirorotas) != NULL)&&(buffer[0] != '#')){
+        if(sera_letra(buffer[0])){
+            tirar_newline(buffer);
+            construir_bloco_subrota(lista_cidades, buffer, &aux_subrota, &numero_itinerarios);
+        }
+        buffer[0] = '\0';
+    }
+
+    if(numero_itinerarios<1){
+        printf("AVISO: a rota %d esta' vazia ou nao apresenta itinerarios contidos no localidades.txt! Esta rota sera' ignorada!\n", numero_rota);
+        free(novo->lista);
+        novo->lista = NULL;
+        free(novo);
+        novo = NULL;
+        return novo;
+    }
+    /*Quando chegar ao fim do loop, devemos ter um bloco de ROTA montado com toda a sua lista de itinerarios validos. Portanto, a distancia do ultimo bloco SUBROTA da lista (apontado pelo aux_subrota) deve ter a distancia_total a colocar dentro do bloco ROTA*/
+    novo->distancia_total = aux_subrota->distancia;
+    return novo;
+}
+
+/*--------------------------------------
+| Nome: tirar_newline
+| Accao: encontra um '\n' numa string e termina-a com '\0' na posicao da primeira ocorrencia desse '\n'
+| Util para tirar o '\n' de strings como o buffer (o fgets capta a linha toda, incluindo o '\n', ficando com um cenario em que strcmp("Lisboa", "Lisboa\n")!=0)
+| Observacao: devido a uns problemas com o '\r' entre windows e linux, duplicou-se o codigo para garantir que nao existe nem '\n' nem '\r' no fim do buffer!
++---------------------------------------*/
+void tirar_newline(char str[]){
+    char * ocorrencia_newline;
+    ocorrencia_newline = strchr(str, '\n');
+    if(ocorrencia_newline != NULL)
+        *ocorrencia_newline = '\0';
+    /*E agora faz-se o mesmo para o '\r'*/
+    ocorrencia_newline = strchr(str, '\r');
+    if(ocorrencia_newline != NULL)
+        *ocorrencia_newline = '\0';
+}
+
+/*--------------------------------------
+| Nome: construir_bloco_subrota
+| Accao: funcao auxiliar para o construir_bloco_rota: dentro de cada ROTA, vai colocar o apontador itinerario a apontar para a respetiva cidade (de forma a recolher as coordenadas)
+| E vai preencher o campo distancia enquanto acumula distancia de um bloco SUBROTA para outro, sendo usado de fora o apontador aux_subrota(passagem por endereco), que fica sempre a apontar para a zona em que se vai inserir um novo bloco, ie, no fim da lista
+| Passa por endereco o numero de itinerarios que ja colocou na lista de SUBROTA's, util para garantir que o primeiro caso a distancia fica a zero e para contar quantos itinerarios conseguiu encontrar
++---------------------------------------*/
+void construir_bloco_subrota(BLOCOCIDADE * lista_cidades, char nome_itinerario[], SUBROTA ** aux_subrota, int * numero_itinerarios){
+    BLOCOCIDADE * aux_procurar_cidade;
+    SUBROTA * novo_subrota;
+    aux_procurar_cidade = procurar_cidade(lista_cidades, nome_itinerario);
+
+    novo_subrota = (SUBROTA *) calloc(1, sizeof(SUBROTA));
+    validar_calloc(novo_subrota);
+    novo_subrota->prox = NULL;
+    /*printf("Aux_procurar_cidade->prox esta a apontar para %s\n", aux_procurar_cidade->prox->cidade.nome);*/
+    if(aux_procurar_cidade == NULL){
+        printf("Nao foi encontrada nenhuma localidade com o nome %s!\n", nome_itinerario);
+        free(novo_subrota);
+        novo_subrota = NULL;
+    }
+
+    else{
+        novo_subrota->itinerario = aux_procurar_cidade->prox;
+        novo_subrota->distancia = (*aux_subrota)->distancia + sera_diferente_de_zero(*numero_itinerarios) * distancia_entre_cidades((*aux_subrota)->itinerario->cidade, novo_subrota->itinerario->cidade);
+        (*aux_subrota)->prox = novo_subrota;
+        *aux_subrota = (*aux_subrota)->prox;
+        *numero_itinerarios = *numero_itinerarios + 1;
+    }
+}
+
+/*--------------------------------------
+| Nome: inserir_rota_distancia_crescente
+| Accao: tendo o apontador do topo da lista de ROTA's e um apontador de um novo bloco, ja' preenchido com a distancia_total e todos os itinerarios, coloca-lo por ordem crescente da distancia_total na lista
+| Exemplo da lista por ordem crescente, representando apenas o valor de distancia_total
+| topo_lista-rotas->|-999KM|->|40KM|->|45.74KM|->|50KM|->|100KM|->|155KM|->NULL
+| De lembrar que como o primeiro bloco do tipo ROTA na lista e' um registo separado que nao vai ser usado pelo programa, ele vai ter um valor de distancia total negativo
++---------------------------------------*/
+void inserir_rota_distancia_crescente(ROTA * topo_lista_rotas, ROTA * rota_por_inserir){
+    ROTA * step;
+    for(step = topo_lista_rotas; (step->prox != NULL)&&(compara_numericamente(step->prox->distancia_total, rota_por_inserir->distancia_total)); step = step->prox){}
+    rota_por_inserir->prox = step->prox;
+    step->prox = rota_por_inserir;
+}
+
+/*--------------------------------------
+| Nome: sera_letra
+| Accao: dado um char, verifica se ele e' uma letra
+| Return: 1 se for uma letra. Caso contrário, zero.
+| Observacao: vai ser util para, no primeiro bloco de subrota efetivo da lista de subrotas, a sua distancia ficar zero KM, e nao igual 'a distancia entre o primeiro itinerario e a Null_Island!
++---------------------------------------*/
+int sera_letra(char caracter){
+    if((caracter >= 'A') && (caracter <= 'Z'))
+        return 1;
+    if((caracter >= 'a') && (caracter <= 'z'))
+        return 1;
+    return 0;
+}
+
+/*--------------------------------------
+| Nome: sera_diferente_de_zero
+| Accao: dado um numero, verifica se e' diferente de zero
+| Return: zero se o numero for zero. Caso contrário, return 1
++---------------------------------------*/
+int sera_diferente_de_zero(int numero){
+    if(numero == 0)
+        return 0;
+    return 1;
+}
+
+/*--------------------------------------
+| Nome: criar_lista_rotas
+| Accao: depois da lista de cidades ter sido criada, ler o ficheiro rotas.txt e construir a lista de rotas. 
+| A lista de rotas será uma lista com um registo separado para a base,
+| Logo a ROTA do topo terá lista==NULL, numero [da rota] e distancia_total negativos para distinguir dos blocos com ROTA's efetivos.
+| Return: apontador para o início da lista das rotas
++---------------------------------------*/
+ROTA * criar_lista_rotas(void){
+    ROTA * topo;
+    topo = calloc(1, sizeof(ROTA));
+    validar_calloc(topo);
+
+    /*atribuicao de valores arbitrarios, maioria apenas possiveis de observar neste registo separado para a base:*/
+    topo->distancia_total=-999;
+    topo->numero=-123456789;
+    topo->lista=NULL;
+    topo->prox=NULL;
+
+    return topo;
+}
+
+/*--------------------------------------
+| Nome: criar_lista_subrotas
+| Accao: criar uma lista de subrotas com o registo separado para a base a apontar para a Null_Island como itinerario, como forma de a distinguir das restantes, deve ter distancia zero para nao afetar os calculos da distancia!
+| A lista de SUBROTA's dentro de cada ROTA será uma lista com um registo separado para a base,
+| Logo a ROTA do topo terá lista==NULL, numero [da rota] e distancia_total negativos para distinguir dos blocos com ROTA's efetivos.
+| Return: apontador para o início da lista das subrotas
++---------------------------------------*/
+SUBROTA * criar_lista_subrotas(BLOCOCIDADE * lista_cidades){
+    SUBROTA * subrota_nula;
+    subrota_nula = (SUBROTA *)calloc(1, sizeof(SUBROTA));
+    validar_calloc(subrota_nula);
+    subrota_nula->itinerario = lista_cidades;
+    subrota_nula->prox = NULL;
+    subrota_nula->distancia = 0;
+    return subrota_nula;
+}
+
+
+void mostrar_lista_rotas(ROTA * lista){
+    ROTA * step;
+    SUBROTA * aux;
+    for(step = lista->prox;step != NULL; step = step->prox){
+        printf("#ROTA %d\n", step->numero);
+        for(aux = step->lista->prox; aux != NULL; aux = aux->prox)
+            printf("%s %g Km\n", aux->itinerario->cidade.nome, aux->distancia);
+    }
 }
