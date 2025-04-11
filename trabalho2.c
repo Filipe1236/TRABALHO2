@@ -1,5 +1,13 @@
+/*----------------------------------------------------------------------
+TRABALHO 2 DE PROGRAMAÇÃO 2024/2025
+Realizado por:
+Beatriz de Carvalho Vaz n.113407
+Filipe Braz Gomes n.114217
+LEAer2021
+-------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "headertrabalho2.h"
 
 /*--------------------------------------
@@ -23,17 +31,7 @@ int validar_coordenadas(CIDADE localidade){
     return erro;
 }
 
-/*--------------------------------------
-| Nome: verificar_argumentos_agrupados
-| Accao: Protege o programa do caso em que argumentos como o -ADI, que exigem de seguida varios parametros, nao os tenham, impedindo que o programa procure elementos do argv de índice superior ao argc!
-+---------------------------------------*/
-void protege_argumentos_agrupados_do_fim(int posicao_argumento, int numero_argumentos_seguidos, int argc){
-    if((posicao_argumento + numero_argumentos_seguidos) > argc){
-        fprintf(stderr, "ERRO: ultimo argumento indicado exige de seguida mais %d parametros para o definir na totalidade\n", numero_argumentos_seguidos);
-        mostrar_utilizacao();
-        exit(-1);
-    }
-}
+
 
 /*--------------------------------------
 | Nome: mostrar_utilizacao
@@ -130,10 +128,11 @@ BLOCOCIDADE * encontrar_ponto_insersao_alfabeticamente(BLOCOCIDADE * topolista, 
 | Nome: insere_na_lista_cidades_alfabeticamente
 | Accao: dada uma cidade completamente definida, inseri-la na lista dinamica por ordem alfabetica
 | Terceiro parametro: contador da posicao da linha do ficheiro a ser lida para indicar no aviso caso essa linha se encontre duplicada!
+| Quarto parametro: se o parametro TL esta' presente (1) ou nao(0)!
 | Colocar nesse parametro negativo se for para inserir pelo -ADI! Zero caso seja desnecessario
 | Exemplo de lista criada neste método: topo->|Null_Island|->|Aveiro|->|Braga|->|Bruxelas|->|Coimbra|->|Lisboa|...
 +---------------------------------------*/
-void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir, int contador_linha){
+void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir, int contador_linha, int booleanTL){
     BLOCOCIDADE * novo;
     BLOCOCIDADE * anterior_insersao;
 
@@ -143,7 +142,10 @@ void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_
     anterior_insersao = encontrar_ponto_insersao_alfabeticamente(topo, novo);
     /*Aproveitar a ocasiao para verificar se estamos a acrescentar 'a lista uma localidade que ja' la' esta!*/
     if(strcmp(anterior_insersao->cidade.nome, novo->cidade.nome) == 0){
-        printf("AVISO: localidades.txt -> linha %d: a localidade %s encontra-se duplicada no localidades.txt!\n",contador_linha, novo->cidade.nome);
+        if(booleanTL)
+            printf("AVISO: localidades.txt -> linha %d: a localidade %s encontra-se duplicada!\n",contador_linha, novo->cidade.nome);
+        if(contador_linha == CONTADOR_LINHA_ADI)
+            printf("AVISO: a cidade dada pelo -ADI vai ser ignorada porque ja' existe no localidades.txt!\n");
         free(novo);
         novo = NULL;
     }
@@ -207,10 +209,10 @@ void libertar_lista(BLOCOCIDADE ** topo){
 /*--------------------------------------
 | Nome: TL_ler_cidades
 | Accao: tenta ler o ficheiro localidades.txt e vai colocando as cidades lidas na lista por ordem alfabetica.
-| OBS: NAO ESQUECER OS AVISOS de erros no ficheiro! ESTES SÓ APARECEM QUANDO O TL ESTIVER LÁ. CASO CONTRÁRIO, PODE HAVER ERROS, MAS A LEITURA CONTINUA
+| OBS: Tem como parametro um "boolean" da existencia ou nao do parametro TL, permitindo mostrar ou nao os avisos!
 | RETURN DO POINTER DA LISTA DE CIDADES!
 +---------------------------------------*/
-BLOCOCIDADE * TL_ler_cidades(void){
+BLOCOCIDADE * TL_ler_cidades(int booleanTL){
     BLOCOCIDADE * listatopo;
     char buffer [255];
     int linha = 1;
@@ -230,12 +232,12 @@ BLOCOCIDADE * TL_ler_cidades(void){
             buffer[0] = '\0';
         }*/
         if(((return_scan = SSCANF_LOCALIDADES) == 3) && (validar_coordenadas(cidade_intermediaria) == 0))
-            insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria, linha);
-        else if (validar_coordenadas(cidade_intermediaria)){
-            printf("Erro nos valores das coordenadas na linha %d.",linha);
+            insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria, linha, booleanTL);
+        else if (validar_coordenadas(cidade_intermediaria) && booleanTL){
+            printf("Erro nos valores das coordenadas na linha %d.", linha);
             erro = 1;
         }
-        else if (return_scan > 0){
+        else if ((return_scan > 0) && booleanTL){
             printf("ERRO: localidades.txt -> linha %d: Erro no numero de parametros!\n", linha);
             erro = 1;
         }
@@ -244,7 +246,7 @@ BLOCOCIDADE * TL_ler_cidades(void){
     }
 
     fclose(ficheirolocalidades);
-    if(erro)
+    if(erro && booleanTL)
         exit(-1);
 
 
@@ -401,8 +403,6 @@ ROTA * ciclo_leitura_rotas(BLOCOCIDADE * lista_cidades){
     }
     lista_rotas = criar_lista_rotas();
     while(fgets(buffer,255,ficheirorotas) != NULL){
-        /*if(buffer[0] == '\n')
-            buffer[0] = '\0';*/
         if(sscanf(buffer,"#ROTA %d", &numero_rota)==1){
             posicao_inicial = ftell(ficheirorotas); /*Tenho de guardar esta posicao no ficheiro porque depois vou avancar demais no construir_bloco_rota, por isso convem voltar atras, logo depois de encontrar o #ROTA serve*/
             printf("Rota %d encontrada!\n", numero_rota);
@@ -412,9 +412,8 @@ ROTA * ciclo_leitura_rotas(BLOCOCIDADE * lista_cidades){
                 inserir_rota_distancia_crescente(lista_rotas, novo);
             fseek(ficheirorotas, posicao_inicial, SEEK_SET); /*Voltar atras no ficheiro*/
         }
-        else{
-            /*printf("%s",buffer);*/
-            buffer[0] = '\0';}
+        else
+            buffer[0] = '\0';
     }
     fclose(ficheirorotas);
     return lista_rotas;
@@ -581,9 +580,8 @@ SUBROTA * criar_lista_subrotas(BLOCOCIDADE * lista_cidades){
     subrota_nula->distancia = 0;
     return subrota_nula;
 }
-
-
-void mostrar_lista_rotas(ROTA * lista){
+/*Alterar esta funcao para escrever as coisas nao na consola, mas num ficheiro de output*/
+void output_lista_rotas(ROTA * lista, char nome_ficheiro[]){
     ROTA * step;
     SUBROTA * aux;
     for(step = lista->prox;step != NULL; step = step->prox){
@@ -591,4 +589,159 @@ void mostrar_lista_rotas(ROTA * lista){
         for(aux = step->lista->prox; aux != NULL; aux = aux->prox)
             printf("%s %g Km\n", aux->itinerario->cidade.nome, aux->distancia);
     }
+}
+
+
+/*--------------------------------------
+| Nome: procurar_rota
+| Accao: procura na lista de rotas a rota com o numero especificado
+| Return: o pointer do BLOCOCIDADE com a rota do numero indicado. Aqui nao so' vamos mesmo usar para o bloco atual, nao o anterior
+| RETURN NULL se a funcao percorrer a lista toda e nao encontrar a rota com esse numero
++---------------------------------------*/
+ROTA * procurar_rota(ROTA * lista_rotas, int numero_rota_procurada){
+    for (;(lista_rotas != NULL) && (lista_rotas->numero != numero_rota_procurada); lista_rotas = lista_rotas->prox);
+    return lista_rotas;
+}
+
+
+/*--------------------------------------
+| Nome: libertar_lista_rotas
+| Accao: liberta todos os blocos alocados da lista de rotas, incluindo subrotas dentro de cada lista
++---------------------------------------*/
+void libertar_lista_rotas(ROTA * topo){
+}
+
+/*--------------------------------------
+| Nome: reconhece_comandos
+| Accao: dados o argc, o argv e um vetor auxiliar de inteiros, a funcao vai percorrer todos os argumentos dados e procurar: 
+| -a presenca ou ausencia dos parametros (os primeiros 6 elementos do vetor vao servir como booleanos, ou seja, ficam a 0 se nao estiver, a 1 se estiver, estando cada elemento atribuido a um parametro atraves de defines no headertrabalho2.h)
+| -se o parametro necessitar de mais "subparametros", verificar que estes podem estar presentes 'a frente do parametro (com a funcao erro) 
++---------------------------------------*/
+void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUMERO_PARAMETROS]){
+    int i;
+    int erro = 0;
+    if((argc < 4) || (argc > 7)){
+        fprintf(stderr, "ERRO: numero incorreto de parametros introduzidos! Apenas existem comandos com 3 a 6 parametros!\n");
+        mostrar_utilizacao();
+        exit(-1);
+    }
+    /*Inicia todos os elementos do vetor argumento a zero. Depois atribui ao NUMERO_ROTA, o numero de rota especificado pelo -ROTAS um valor de SEM_ROTA, sendo apenas alterado se tiver algo a ser convertido*/
+    for(i = 0;i < NUMERO_PARAMETROS; i++)
+        argumento[i] = 0;
+    NUMERO_ROTA = SEM_ROTA;
+    
+    for (i=1; i<argc ; i = i+1){
+        if (strcmp(argv[i],"-TL")==0)
+            argumento[TL] = 1;
+
+        if (strcmp(argv[i],"-LO")==0){
+            argumento[LO] = 1;
+            erro = erro + erro_argumentos_agrupados(i, 1, argc);
+            LO_POS_NOME_FICHEIRO = i + 1;
+        }
+
+        if (strcmp(argv[i],"-ROTAS")==0){
+            argumento[ROTAS] = 1;
+            /*Como pode ou nao ter algo 'a frente a especificar o numero da rota a processar, nao vai haver verificacao de erros aqui!O if abaixo desempenha essa tarefa*/
+            ROTAS_POS_NUMERO_ROTA = i + 1;
+            if(ROTAS_POS_NUMERO_ROTA <= argc)
+                sscanf(argv[ROTAS_POS_NUMERO_ROTA], "%d", &(NUMERO_ROTA));
+        }
+
+        if (strcmp(argv[i],"-LR")==0){
+            argumento[LR] = 1;
+            erro = erro + erro_argumentos_agrupados(i, 1, argc);
+            LR_POS_NOME_FICHEIRO = i + 1;
+        }
+
+        if (strcmp(argv[i],"-ADI")==0){
+            argumento[ADI] = 1;
+            erro = erro + erro_argumentos_agrupados(i, 3, argc);
+            ADI_POS_NOME = i + 1;
+            ADI_POS_LATITUDE = i + 2;
+            ADI_POS_LONGITUDE = i + 3;
+        }
+
+        if (strcmp(argv[i],"-REM")==0){
+            argumento[REM] = 1;
+            erro = erro + erro_argumentos_agrupados(i, 1, argc);
+            REM_POS_NOME = i + 1;
+        }
+    }
+
+    /*Ao fim do loop, verificar se houve pelo menos um erro. Se houver, o programa mostra a utilizacao e termina*/
+    if(erro > 0){
+        mostrar_utilizacao();
+        exit(-1);
+    }
+}
+
+/*--------------------------------------
+| Nome: erro_argumentos_agrupados
+| Accao: Protege o programa do caso em que argumentos como o -ADI, que exigem de seguida varios parametros, nao os tenham, impedindo que o programa procure elementos do argv de índice superior ao argc!
+| Return: 1 se houver erro. 0 se estiver tudo bem!
++---------------------------------------*/
+int erro_argumentos_agrupados(int posicao_argumento, int numero_argumentos_seguidos, int argc){
+    int erro = 0;
+    if((posicao_argumento + numero_argumentos_seguidos) > argc){
+        fprintf(stderr, "ERRO: ultimo argumento indicado exige de seguida mais %d parametros para o definir na totalidade\n", numero_argumentos_seguidos);
+        erro = 1;
+    }
+    return erro;
+}
+
+CIDADE reconhece_comandos_segunda_etapa(char * argv[], int argumento[NUMERO_PARAMETROS]){
+    int erro = 0;
+    CIDADE cidade_aux = atribuir_cidade("Null_Island", 0, 0);
+
+    if(argumento[LO] && argv[LO_POS_NOME_FICHEIRO][0] == '-'){
+        fprintf(stderr,"-LO: ERRO: faltou fornecer o nome do ficheiro de output depois do parametro -LO!O nome do ficheiro nao deve comecar com '-'!\n");
+        erro = 1;
+    }
+
+    if(argumento[LR] && argv[LR_POS_NOME_FICHEIRO][0] == '-'){
+        fprintf(stderr,"-LR: ERRO: faltou fornecer o nome do ficheiro de output depois do parametro -LR!O nome do ficheiro nao deve comecar com '-'!\n");
+        erro = 1;
+    }
+
+    strcpy(cidade_aux.nome, argv[ADI_POS_NOME]);
+    if(argumento[ADI] && !sera_letra(argv[ADI_POS_NOME][0])){
+        fprintf(stderr,"-ADI: ERRO: faltou fornecer o nome da cidade a adicionar depois do -ADI!O nome de uma cidade comeca com uma letra!\n");
+        erro = 1;
+    }
+
+    if(argumento[ADI] && (!SSCANF_LATITUDE || !SSCANF_LONGITUDE)){
+        fprintf(stderr,"-ADI: ERRO: faltou fornecer valores das coordenadas da cidade a adicionar!Parametros do -ADI:\n-ADI <nome> <latitude> <longitude>\nA latitude e a longitude devem ser numeros reais!\n");
+        erro = 1;
+    }
+
+    if(argumento[REM] && !sera_letra(argv[REM_POS_NOME])){
+        fprintf(stderr,"-REM: ERRO: faltou fornecer o nome da cidade a remover depois do -REM!O nome de uma cidade comeca com uma letra!\n");
+        erro = 1;
+    }
+    /*Ao fim destas condicoes todas, verificar se houve pelo menos um erro. Se houve, o programa mostra a utilizacao e termina*/
+    if(erro){
+        mostrar_utilizacao();
+        exit(-1);
+    }
+
+    return cidade_aux;
+}
+
+void explica_relacao_argc_comando(int argc){
+    switch(argc){
+        case 4:
+            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO com -TL!\n", argc - 1);
+            break;
+        case 5:
+            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO com -REM!\n", argc - 1);
+            break;
+        case 6:
+            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO, -ROTAS sem especificar rota e -LR!\n", argc - 1);
+            break;
+        case 7:
+            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se ou o uso de -LO, -LR e -ROTAS especificando a rota ou o uso de -LO e -ADI!\n", argc - 1);
+            break;
+    }
+    mostrar_utilizacao();
 }

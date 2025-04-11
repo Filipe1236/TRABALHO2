@@ -1,15 +1,47 @@
+/*----------------------------------------------------------------------
+TRABALHO 2 DE PROGRAMAÇÃO 2024/2025
+Realizado por:
+Beatriz de Carvalho Vaz n.113407
+Filipe Braz Gomes n.114217
+LEAer2021
+-------------------------------------------------------------------------*/
 #ifndef HEADER_TRAB2
+
 #define HEADER_TRAB2
 
 #define MAX 30
-#define CODIGO_CONTADOR_LINHA_ADI -1 /*Usar quando for para adicionar a cidade extra do -ADI 'a lista!*/
-#define MAXIMO_DE_ARGUMENTOS 14
+#define CONTADOR_LINHA_ADI -1 /*Usar quando for para adicionar a cidade extra do -ADI 'a lista!*/
 #define SSCANF_LOCALIDADES sscanf(buffer,"%s %f %f", cidade_intermediaria.nome, &(cidade_intermediaria.latitude), &(cidade_intermediaria.longitude))
+#define SSCANF_LATITUDE sscanf(argv[ADI_POS_LATITUDE], "%f", &(cidade_aux.latitude))
+#define SSCANF_LONGITUDE sscanf(argv[ADI_POS_LONGITUDE], "%f", &(cidade_aux.longitude))
 
 #define RT 6371.0 /*Raio medio da Terra em km*/
 #define PI 3.14159
 
-#define SEM_ROTA -123456789
+/*DEFINES PARA OS ARGUMENTOS DA MAIN------------------------*/
+#define SEM_ROTA -22334455
+
+#define NUMERO_PARAMETROS 14
+/*Os primeiros 6 elementos do vetor vao servir como booleanos para detetar se o argumento esta' ou nao presente. 
+Ou seja, ficam a 0 se nao estiver, a 1 se estiver*/
+#define TL 0
+#define LO 1
+#define ADI 2
+#define REM 3
+#define ROTAS 4
+#define LR 5
+
+/*Os ultimos elementos vao indicar a posicao no argv em que dados auxiliares associados a um comando se encontram.
+Por exemplo, argv[LO_POS_NOME_FICHEIRO] vai ser um apontador da string que tem o nome fornecido para o ficheiro de output logo apos o -LO*/
+#define LO_POS_NOME_FICHEIRO argumento[6]
+#define ADI_POS_NOME argumento[7]
+#define ADI_POS_LATITUDE argumento[8]
+#define ADI_POS_LONGITUDE argumento[9]
+#define REM_POS_NOME argumento[10]
+#define ROTAS_POS_NUMERO_ROTA argumento[11]
+#define LR_POS_NOME_FICHEIRO argumento[12]
+#define NUMERO_ROTA argumento[13]
+/*FIM DOS DEFINES DOS ARGUMENTOS---------------------------------*/
 
 /*#define procurar_cidade_atual(x, y) ((procurar_cidade(x, y))->prox)*/ /*Apenas uma ideia de macro que pode vir a ser util*/
 /*------------------DEFINICOES DE TIPOS--------------*/
@@ -43,18 +75,18 @@ typedef struct rota{
 void mostrar_utilizacao(void);
 CIDADE atribuir_cidade(char nome[], float latitude, float longitude);
 void mostrar_lista_cidades(BLOCOCIDADE * topo);
-BLOCOCIDADE * TL_ler_cidades(void);
+BLOCOCIDADE * TL_ler_cidades(int booleanTL);
 BLOCOCIDADE * procurar_cidade(BLOCOCIDADE * lista, char nome_procurado[]);
 void remover_da_listacidades(BLOCOCIDADE * lista, char nome_a_remover[]);
 int compara_numericamente(float menor, float maior);
 int validar_coordenadas(CIDADE localidade);
-void protege_argumentos_agrupados_do_fim(int posicao_argumento, int numero_argumentos_seguidos, int argc);
+int erro_argumentos_agrupados(int posicao_argumento, int numero_argumentos_seguidos, int argc);
 void mostrar_utilizacao(void);
 void validar_calloc(void * pointer);
 BLOCOCIDADE * criar_lista_cidades(void);
 int compara_alfabeticamente(char Abc[], char Def[]);
 BLOCOCIDADE * encontrar_ponto_insersao_alfabeticamente(BLOCOCIDADE * topolista, BLOCOCIDADE * novo);
-void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir, int contador_linha);
+void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir, int contador_linha, int booleanTL);
 int conta_cidades_da_lista(BLOCOCIDADE * topo);
 void libertar_lista(BLOCOCIDADE ** topo);
 void LO_escrever_cidades(char nomeficheiro[], BLOCOCIDADE * lista);
