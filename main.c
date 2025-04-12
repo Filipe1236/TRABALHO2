@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
-TRABALHO 2 DE PROGRAMAÇÃO 2024/2025
+TRABALHO 2 DE PROGRAMACAO 2024/2025
 Realizado por:
 Beatriz de Carvalho Vaz n.113407
 Filipe Braz Gomes n.114217
@@ -53,7 +53,7 @@ int main(int argc, char * argv[]){
     }
 
     /*libertar memoria!*/
-    libertar_lista(&lista_cidades);
+    libertar_lista_cidades(&lista_cidades);
     libertar_lista_rotas(&lista_rotas);
     return 0;
 }

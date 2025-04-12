@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
-TRABALHO 2 DE PROGRAMAÇÃO 2024/2025
+TRABALHO 2 DE PROGRAMACAO 2024/2025
 Realizado por:
 Beatriz de Carvalho Vaz n.113407
 Filipe Braz Gomes n.114217
@@ -93,7 +93,7 @@ int compara_alfabeticamente(char Abc[], char Def[]);
 BLOCOCIDADE * encontrar_ponto_insersao_alfabeticamente(BLOCOCIDADE * topolista, BLOCOCIDADE * novo);
 void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_por_inserir, int contador_linha, int booleanTL);
 int conta_cidades_da_lista(BLOCOCIDADE * topo);
-void libertar_lista(BLOCOCIDADE ** topo);
+void libertar_lista_cidades(BLOCOCIDADE ** topo);
 void LO_escrever_cidades(char nomeficheiro[], BLOCOCIDADE * lista);
 float distancia_em_x(CIDADE A, CIDADE B);
 float distancia_em_y(CIDADE A, CIDADE B);
@@ -107,16 +107,17 @@ int sera_letra(char caracter);
 int sera_diferente_de_zero(int numero);
 ROTA * criar_lista_rotas(void);
 SUBROTA * criar_lista_subrotas(BLOCOCIDADE * lista_cidades);
-void mostrar_lista_rotas(ROTA * lista);
 void tirar_newline(char str[]);
 
-void explica_relacao_argc_comando(int argc);
-void libertar_lista_rotas(ROTA **lista);
-void libertar_lista_subrotas(SUBROTA **lista);
+
+void libertar_lista_rotas(ROTA ** topo);
+void libertar_lista_subrotas(SUBROTA ** topo);
 void output_lista_rotas(ROTA *lista, char nome_ficheiro[]);
-void output_rota_unica(ROTA *lista, char nome_ficheiro[], int numero_rota);
+void output_rota_unica(ROTA *lista_rotas, char nome_ficheiro[], int numero_rota);
+void intervalo_argc_valido(int argc);
 void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUMERO_PARAMETROS]);
 CIDADE reconhece_comandos_segunda_etapa(char *argv[], int argumento[NUMERO_PARAMETROS]);
+void reconhece_comandos_terceira_etapa(int argc, int argumento[NUMERO_PARAMETROS]);
 ROTA * procurar_rota(ROTA * lista_rotas, int numero_rota_procurada);
 
 #endif

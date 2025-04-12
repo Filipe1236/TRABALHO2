@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
-TRABALHO 2 DE PROGRAMAÇÃO 2024/2025
+TRABALHO 2 DE PROGRAMACAO 2024/2025
 Realizado por:
 Beatriz de Carvalho Vaz n.113407
 Filipe Braz Gomes n.114217
@@ -8,6 +8,7 @@ LEAer2021
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "headertrabalho2.h"
 
 /*--------------------------------------
@@ -39,14 +40,18 @@ int validar_coordenadas(CIDADE localidade){
 +---------------------------------------*/
 void mostrar_utilizacao(void){
     printf("Utilizacao: processa_rotas [ARGUMENTOS]\n");
-    printf("\n::\n::ARGUMENTOS OBRIGATORIOS (vai ser necessario incluir pelo menos um destes para o funcionamento do programa):\n::\n");
-    printf("\t-TL :: testa a leitura do ficheiro localidades.txt e valida todos os dados desse ficheiro\n");
-    printf("\t-LO <NOME DO FICHEIRO DE OUTPUT PARA AS LOCALIDADES> :: faz o mesmo que -TL, colocando todos os dados recolhidos no ficheiro com o nome especificado\n");
-    printf("\t-ROTAS <NUMERO DA ROTA> :: faz o mesmo que -TL, lendo adicionalmente o ficheiro rotas.txt e processando a rota cujo nome foi especificado de seguida ou, caso nao seja indicado, para todas as rotas do ficheiro\n");
-    printf("\t\t-LR <NOME DO FICHEIRO DE OUTPUT PARA O PROCESSAMENTO DE ROTAS> :: indica o nome do ficheiro de output onde as rotas vao ser usadas, devendo ser usado com -ROTAS, caso contrario, o ficheiro de output sera output_rotas.txt\n");
-    printf("\n::\n::ARGUMENTOS OPCIONAIS:\n::\n");
-    printf("\t-ADI <nome> <latitude> <longitude> :: acrescenta uma localidade adicional 'a lista (na memoria do programa) para ser contabilizada nessa execucao\n");
-    printf("\t-REM <nome> :: tira da memoria do programa a localidade de nome especificado, deixando de ser contabilizada na execucao\n");
+    printf("Comandos disponiveis (a ordem dos parametros que comecam com '-' pode ser diferente!):\n");
+    printf("->1)./processa_rotas -LO <nomeoutputlocalidades> -TL\n");
+        printf("\tTesta a leitura do localidades.txt\n");
+        printf("\tIndicar nome do ficheiro de output 'a frente do -LO\n");
+    printf("->2)./processa_rotas -LO <nomeoutputlocalidades> -ADI <nome> <latitude> <longitude>\n");
+        printf("\tAdiciona uma localidade 'a memoria do programa\n");
+    printf("->3)./processa_rotas -LO <nomeoutputlocalidades> -REM <nome>\n");
+        printf("\tRemove uma localidade da memoria do programa\n");
+    printf("->4)./processa_rotas -LO <nomeoutputrotas> -LR <nomeoutputrotas> -ROTAS <numerorota>\n");
+        printf("\tProcessa tanto localidades como a rota de numero especificado.\n");
+        printf("\tIndicar nome do ficheiro de output da rota 'a frente do -LR\n");
+        printf("\tSe nao for indicada nenhuma rota 'a frente do -ROTAS, processa-se todas as rotas do rotas.txt\n");
 }
 
 /*--------------------------------------
@@ -149,7 +154,7 @@ void insere_na_lista_cidades_alfabeticamente (BLOCOCIDADE * topo, CIDADE cidade_
         free(novo);
         novo = NULL;
     }
-    /*O codigo abaixo so deve ser executada quando a cidade por adicionar nao e' nenhum duplicado do que ja' esta' na lista!*/
+    /*O codigo abaixo so deve ser executado quando a cidade por adicionar nao e' nenhum duplicado do que ja' esta' na lista!*/
     else{
         novo->prox = anterior_insersao->prox;
         anterior_insersao->prox = novo;
@@ -194,10 +199,10 @@ int conta_cidades_da_lista(BLOCOCIDADE * topo){
 }
 
 /*--------------------------------------
-| Nome: libertar_lista
+| Nome: libertar_lista_cidades
 | Accao: liberta todos os blocos alocados da lista de cidades
 +---------------------------------------*/
-void libertar_lista(BLOCOCIDADE ** topo){
+void libertar_lista_cidades(BLOCOCIDADE ** topo){
     BLOCOCIDADE * step;
     while(*topo != NULL){
         step = *topo;
@@ -234,7 +239,7 @@ BLOCOCIDADE * TL_ler_cidades(int booleanTL){
         if(((return_scan = SSCANF_LOCALIDADES) == 3) && (validar_coordenadas(cidade_intermediaria) == 0))
             insere_na_lista_cidades_alfabeticamente(listatopo,cidade_intermediaria, linha, booleanTL);
         else if (validar_coordenadas(cidade_intermediaria) && booleanTL){
-            printf("Erro nos valores das coordenadas na linha %d.", linha);
+            printf("Erro nos valores das coordenadas na linha %d.\n", linha);
             erro = 1;
         }
         else if ((return_scan > 0) && booleanTL){
@@ -579,7 +584,7 @@ SUBROTA * criar_lista_subrotas(BLOCOCIDADE * lista_cidades){
 
 /*--------------------------------------
 | Nome: output_lista_rotas
-| Accao: escreve num ficheiro o nome de todas as rotas processadas!
+| Accao: escreve num ficheiro o output de todas as rotas processadas!
 +---------------------------------------*/
 void output_lista_rotas(ROTA * lista, char nome_ficheiro[]){
     FILE * outputrotas;
@@ -599,8 +604,8 @@ void output_lista_rotas(ROTA * lista, char nome_ficheiro[]){
 }
 
 /*--------------------------------------
-| Nome: output_lista_rotas
-| Accao: escreve num ficheiro o nome de todas as rotas processadas!
+| Nome: output_rota_unica
+| Accao: escreve num ficheiro o output da unica rota indicada pelo -ROTAS
 +---------------------------------------*/
 void output_rota_unica(ROTA * lista_rotas, char nome_ficheiro[], int numero_rota){
     ROTA * rota_procurada;
@@ -672,11 +677,12 @@ void intervalo_argc_valido(int argc){
         exit(-1);
     }
 }
+
 /*--------------------------------------
 | Nome: reconhece_comandos_primeira_etapa
 | Accao: dados o argc, o argv e um vetor auxiliar de inteiros, a funcao vai percorrer todos os argumentos dados e procurar: 
 | -a presenca ou ausencia dos parametros (os primeiros 6 elementos do vetor vao servir como booleanos ou flags, ou seja, ficam a 0 se nao estiver, a 1 se estiver, estando cada elemento atribuido a um parametro atraves de defines no headertrabalho2.h)
-| -se o parametro necessitar de mais "subparametros", verificar que estes podem estar presentes 'a frente do parametro (com a funcao erro) 
+| -se o parametro necessitar de mais "subparametros", verificar que estes podem estar presentes 'a frente do parametro (com a funcao erro_argumentos_agrupados) 
 +---------------------------------------*/
 void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUMERO_PARAMETROS]){
     int i;
@@ -739,7 +745,7 @@ void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUM
 
 /*--------------------------------------
 | Nome: erro_argumentos_agrupados
-| Accao: Protege o programa do caso em que argumentos como o -ADI, que exigem de seguida varios parametros, nao os tenham, impedindo que o programa procure elementos do argv de índice superior ao argc!
+| Accao: Protege o programa do caso em que argumentos como o -ADI, que exigem de seguida varios parametros, nao os tenham, impedindo que o programa procure elementos do argv de índice igual ou superior ao argc!
 | Return: 1 se houver erro. 0 se estiver tudo bem!
 +---------------------------------------*/
 int erro_argumentos_agrupados(int posicao_argumento, int numero_argumentos_seguidos, int argc){
@@ -751,6 +757,12 @@ int erro_argumentos_agrupados(int posicao_argumento, int numero_argumentos_segui
     return erro;
 }
 
+/*--------------------------------------
+| Nome: reconhece_comandos_segunda_etapa
+| Accao: segunda etapa, verifica e recolhe o conteudo dos "subparametros", aqueles dos quais parametros como o -ADI dependem (nome a adicionar, latitude, longitude) e se os mesmos sao validos
+| Observacao: esta funcao nao recolhe o numero da rota a processar, caso este exista 'a frente do -ROTAS, isso ja' foi feito na primeira etapa por ser mais conveniente
+| Return: CIDADE auxiliar, que vem ou com o nome da localidade a remover (-REM), ou com o nome e as coordenadas da localidade a adicionar (-ADI)
++---------------------------------------*/
 CIDADE reconhece_comandos_segunda_etapa(char * argv[], int argumento[NUMERO_PARAMETROS]){
     int erro = 0;
     CIDADE cidade_aux = atribuir_cidade("Null_Island", 0, 0);
@@ -794,6 +806,15 @@ CIDADE reconhece_comandos_segunda_etapa(char * argv[], int argumento[NUMERO_PARA
     return cidade_aux;
 }
 
+/*--------------------------------------
+| Nome: reconhece_comandos_terceira_etapa
+| Accao: ultima etapa: para o argc dado, verificar se foram usadas apenas combinacoes de parametros validas, ou seja, se os parametros combinados formam um dos comandos indicados no enunciado
+| comandos em funcao do argc:
+| argc == 4->comando 1) do enunciado:./processa_rotas -LO output1.txt -TL
+| argc == 5->comando 3) do enunciado:./processa_rotas -LO output1.txt -REM <nome>
+| argc == 6->comando 4) do enunciado, sem especificar rota:./processa_rotas -LO output1.txt -LR output2.txt -ROTAS
+| argc == 7->comando 4) do enunciado, especificando rota ou comando 2) do enunciado:./processa_rotas -LO output1.txt -ADI <nome> <latitude> <longitude>
++---------------------------------------*/
 void reconhece_comandos_terceira_etapa(int argc, int argumento[NUMERO_PARAMETROS]){
     int erro = 0;
     switch(argc){
