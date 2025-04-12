@@ -11,7 +11,6 @@ LEAer2021
 #include <string.h>
 #include <math.h>
 #include "headertrabalho2.h"
-#include "trabalho2.c"
 
 int main(int argc, char * argv[]){
     BLOCOCIDADE * lista_cidades;

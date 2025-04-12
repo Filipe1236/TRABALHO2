@@ -1,0 +1,14 @@
+#ROTA 1
+Lisboa
+Porto
+#ROTA 2
+Porto
+Braga
+
+#ROTA 5
+Coimbra
+Santarem
+Leiria
+Lisboa
+Porto
+Braga

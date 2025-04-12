@@ -251,9 +251,10 @@ BLOCOCIDADE * TL_ler_cidades(int booleanTL){
     }
 
     fclose(ficheirolocalidades);
-    if(erro && booleanTL)
+    if(erro && booleanTL){
+        libertar_lista_cidades(&listatopo);
         exit(-1);
-
+    }
 
     return listatopo;
 }
@@ -271,6 +272,7 @@ void LO_escrever_cidades(char nomeficheiro[], BLOCOCIDADE * lista){
     outputcidades = fopen(nomeficheiro, "w");
     if(outputcidades == NULL){
         fprintf(stderr, "ERRO: nao foi possivel escrever ficheiro de output, por favor verificar permissoes!\n");
+        libertar_lista_cidades(&lista);
         exit(-1);
     }
     fprintf(outputcidades, "Numero de cidades:%d\n",numerocidades);
@@ -400,13 +402,14 @@ ROTA * ciclo_leitura_rotas(BLOCOCIDADE * lista_cidades){
     ficheirorotas = fopen("rotas.txt", "r");
     if(ficheirorotas == NULL){
         fprintf(stderr, "ERRO: o ficheiro rotas.txt nao existe!\n");
+        libertar_lista_cidades(&lista_cidades);
         exit(-1);
     }
     lista_rotas = criar_lista_rotas();
     while(fgets(buffer,255,ficheirorotas) != NULL){
         if(sscanf(buffer,"#ROTA %d", &numero_rota)==1){
             posicao_inicial = ftell(ficheirorotas); /*Tenho de guardar esta posicao no ficheiro porque depois vou avancar demais no construir_bloco_rota, por isso convem voltar atras, logo depois de encontrar o #ROTA serve*/
-            printf("Rota %d encontrada!\n", numero_rota);
+            /*printf("Rota %d encontrada!\n", numero_rota);*/
             buffer[0] = '\0';
             novo = construir_bloco_rota(lista_cidades, ficheirorotas, numero_rota);
             if(novo != NULL)
@@ -647,7 +650,6 @@ void libertar_lista_subrotas(SUBROTA ** topo){
         aux = *topo;
         *topo = (*topo)->prox;
         free(aux);
-        aux = NULL;
     }
 }
 /*--------------------------------------
@@ -661,7 +663,6 @@ void libertar_lista_rotas(ROTA ** topo){
         *topo = (*topo)->prox;
         libertar_lista_subrotas(&(aux->lista));
         free(aux);
-        aux = NULL;
     }
 }
 
