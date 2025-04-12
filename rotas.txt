@@ -1,0 +1,93 @@
+#ROTA 1
+Lisboa
+Setubal
+Evora
+
+#ROTA 2
+Lisboa
+Setubal
+Evora
+Beja
+Faro
+
+#ROTA 3
+Coimbra
+Aveiro
+Porto
+Braga
+Viana_do_Castelo
+
+#ROTA 4
+Viana_do_Castelo
+Braga
+Porto
+Aveiro
+Coimbra
+Leiria
+Lisboa
+Setubal
+Beja
+Faro
+
+#ROTA 5
+Faro
+Beja
+Evora
+Portalegre
+Castelo_Branco
+Guarda
+Braganca
+
+#ROTA 6
+Vila_Real
+Viseu
+Coimbra
+Castelo_Branco
+Santarem
+Evora
+Setubal
+Beja
+Faro
+
+#ROTA 7
+Viana_do_Castelo
+Braga
+Vila_Real
+Braganca
+Porto
+Aveiro
+
+#ROTA 8
+Viseu
+Coimbra
+Guarda
+Castelo_Branco
+Leiria
+Santarem
+
+#ROTA 9
+Lisboa
+Setubal
+Evora
+Beja
+Faro
+
+#ROTA 10
+Viana_do_Castelo
+Braga
+Porto
+Vila_Real
+Braganca
+Guarda
+Viseu
+Aveiro
+Coimbra
+Castelo_Branco
+Leiria
+Lisboa
+Setubal
+Santarem
+Portalegre
+Evora
+Beja
+Faro

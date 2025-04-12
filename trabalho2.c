@@ -19,12 +19,12 @@ int validar_coordenadas(CIDADE localidade){
     int erro = 0;
 
     if((localidade.latitude < -90) || (localidade.latitude > 90)){
-        fprintf(stderr, "ERRO: latitude fora dos limites (menor que -90º ou maior que 90º)!\n");
+        fprintf(stderr, "ERRO: latitude fora dos limites (menor que -90 graus ou maior que 90 graus)!\n");
         erro = 1;
     }
 
-    if((localidade.longitude < - 180) || (localidade.longitude > 180)){
-        fprintf(stderr, "ERRO: longitude fora dos limites (menor que -180º ou maior que 180º)!\n");
+    if((localidade.longitude < -180) || (localidade.longitude > 180)){
+        fprintf(stderr, "ERRO: longitude fora dos limites (menor que -180 graus ou maior que 180 graus)!\n");
         erro = 1;
     }
 
@@ -330,20 +330,17 @@ float distancia_entre_cidades (CIDADE A, CIDADE B){
 /*--------------------------------------
 | Nome: procurar_cidade
 | Accao: procura na lista de cidades a cidade com o nome especificado
-| Return: o pointer do BLOCOCIDADE com a cidade do nome indicado ou o anterior(o anterior e' capaz de ter mais utilidade, olha depois para a proxima funcao e decide)
+| Return: o pointer ANTERIOR ao BLOCOCIDADE com a cidade do nome indicado
 | RETURN NULL se a funcao percorrer a lista toda e nao encontrar a cidade com esse nome
-| Observação: foram deixados dois loops e dois apontadores auxiliares caso seja decidido alterar a função para dar return ao apontador do bloco que tem a cidade procurada ao invés do anterior.
 +---------------------------------------*/
 BLOCOCIDADE * procurar_cidade(BLOCOCIDADE * lista, char nome_procurado[]){
-    BLOCOCIDADE * step, * aux;
-    step = lista; 
-    for (;(step!=NULL)&&(strcmp(step->cidade.nome, nome_procurado) != 0);step = step->prox); 
+    BLOCOCIDADE * step;
+    for (step = lista;(step->prox!=NULL)&&(strcmp(step->prox->cidade.nome, nome_procurado) != 0);step = step->prox); 
     /*Caso nao encontre, return de NULL*/
-    if(step == NULL)
-        return step;
+    if(step->prox == NULL)
+        return NULL;
     /*Caso encontre, para dar return do anterior*/
-    for(aux = lista; aux->prox != step; aux = aux->prox);/*faz com que exista um apontador a apontar para o anterior*/
-    return aux;
+    return step;
 }
 
 /*--------------------------------------
@@ -357,14 +354,13 @@ void remover_da_listacidades(BLOCOCIDADE * lista, char nome_a_remover[]){
     BLOCOCIDADE *ant_remover, *remover;
     
     ant_remover = procurar_cidade (lista, nome_a_remover);
+    if ( ant_remover == NULL){
+        printf("Nao foi encontrada uma cidade com o nome %s. Por favor tente de novo.\n", nome_a_remover);
+        return;
+    }
     remover = ant_remover->prox;
-    if ( remover == NULL)
-        printf("Nao foi encontrada uma cidade com esse nome. Por favor tente de novo.");
-    else{ 
-        ant_remover->prox = remover->prox;
-        free(remover);
-
-    } 
+    ant_remover->prox = remover->prox;
+    free(remover);
 }
 
 /*--------------------------------------
@@ -580,18 +576,51 @@ SUBROTA * criar_lista_subrotas(BLOCOCIDADE * lista_cidades){
     subrota_nula->distancia = 0;
     return subrota_nula;
 }
-/*Alterar esta funcao para escrever as coisas nao na consola, mas num ficheiro de output*/
+
+/*--------------------------------------
+| Nome: output_lista_rotas
+| Accao: escreve num ficheiro o nome de todas as rotas processadas!
++---------------------------------------*/
 void output_lista_rotas(ROTA * lista, char nome_ficheiro[]){
+    FILE * outputrotas;
     ROTA * step;
     SUBROTA * aux;
-    for(step = lista->prox;step != NULL; step = step->prox){
-        printf("#ROTA %d\n", step->numero);
-        for(aux = step->lista->prox; aux != NULL; aux = aux->prox)
-            printf("%s %g Km\n", aux->itinerario->cidade.nome, aux->distancia);
+    outputrotas = fopen(nome_ficheiro, "w");
+    if(outputrotas == NULL){
+        fprintf(stderr, "ERRO: nao foi possivel escrever ficheiro de output, por favor verificar permissoes!\n");
+        exit(-1);
     }
+    for(step = lista->prox;step != NULL; step = step->prox){
+        fprintf(outputrotas, "#ROTA %d\n", step->numero);
+        for(aux = step->lista->prox; aux != NULL; aux = aux->prox)
+            fprintf(outputrotas,"%s %g Km\n", aux->itinerario->cidade.nome, aux->distancia);
+    }
+    fclose(outputrotas);
 }
 
-
+/*--------------------------------------
+| Nome: output_lista_rotas
+| Accao: escreve num ficheiro o nome de todas as rotas processadas!
++---------------------------------------*/
+void output_rota_unica(ROTA * lista_rotas, char nome_ficheiro[], int numero_rota){
+    ROTA * rota_procurada;
+    SUBROTA * aux;
+    FILE * outputrotas;
+    rota_procurada = procurar_rota(lista_rotas, numero_rota);
+    if(rota_procurada == NULL){
+        fprintf(stderr, "ERRO: a rota indicada para processar pelo -ROTAS nao foi encontrada na lista de rotas. Por favor coloca-la no rotas.txt!\n");
+        exit(-1);
+    }
+    outputrotas = fopen(nome_ficheiro, "w");
+    if(outputrotas == NULL){
+        fprintf(stderr, "ERRO: nao foi possivel escrever ficheiro de output, por favor verificar permissoes!\n");
+        exit(-1);
+    }
+    fprintf(outputrotas, "#ROTA %d\n", rota_procurada->numero);
+    for(aux = rota_procurada->lista->prox; aux != NULL; aux = aux->prox)
+        fprintf(outputrotas,"%s %g Km\n", aux->itinerario->cidade.nome, aux->distancia);
+    fclose(outputrotas);
+}
 /*--------------------------------------
 | Nome: procurar_rota
 | Accao: procura na lista de rotas a rota com o numero especificado
@@ -603,32 +632,59 @@ ROTA * procurar_rota(ROTA * lista_rotas, int numero_rota_procurada){
     return lista_rotas;
 }
 
-
+/*--------------------------------------
+| Nome: libertar_lista_subrotas
+| Accao: liberta todos os blocos alocados da lista de subrotas
++---------------------------------------*/
+void libertar_lista_subrotas(SUBROTA ** topo){
+    SUBROTA * aux;
+    while(*topo != NULL){
+        aux = *topo;
+        *topo = (*topo)->prox;
+        free(aux);
+        aux = NULL;
+    }
+}
 /*--------------------------------------
 | Nome: libertar_lista_rotas
 | Accao: liberta todos os blocos alocados da lista de rotas, incluindo subrotas dentro de cada lista
 +---------------------------------------*/
-void libertar_lista_rotas(ROTA * topo){
+void libertar_lista_rotas(ROTA ** topo){
+    ROTA * aux;
+    while(*topo != NULL){
+        aux = *topo;
+        *topo = (*topo)->prox;
+        libertar_lista_subrotas(&(aux->lista));
+        free(aux);
+        aux = NULL;
+    }
 }
 
 /*--------------------------------------
-| Nome: reconhece_comandos
-| Accao: dados o argc, o argv e um vetor auxiliar de inteiros, a funcao vai percorrer todos os argumentos dados e procurar: 
-| -a presenca ou ausencia dos parametros (os primeiros 6 elementos do vetor vao servir como booleanos, ou seja, ficam a 0 se nao estiver, a 1 se estiver, estando cada elemento atribuido a um parametro atraves de defines no headertrabalho2.h)
-| -se o parametro necessitar de mais "subparametros", verificar que estes podem estar presentes 'a frente do parametro (com a funcao erro) 
+| Nome: intervalo_argc_valido
+| Accao: podemos chamar de etapa zero do reconhece_comandos. Verifica em primeiro lugar se o intervalo em que o argc se encontra fica entre 4 e 7, inclusive. Caso tal nao aconteca, assume logo que algo esta' mal e termina o programa
+| Como todos os comandos do trabalho ficam com o argc entre 4 e 7, este raciocinio e' valido!
 +---------------------------------------*/
-void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUMERO_PARAMETROS]){
-    int i;
-    int erro = 0;
+void intervalo_argc_valido(int argc){
     if((argc < 4) || (argc > 7)){
         fprintf(stderr, "ERRO: numero incorreto de parametros introduzidos! Apenas existem comandos com 3 a 6 parametros!\n");
         mostrar_utilizacao();
         exit(-1);
     }
-    /*Inicia todos os elementos do vetor argumento a zero. Depois atribui ao NUMERO_ROTA, o numero de rota especificado pelo -ROTAS um valor de SEM_ROTA, sendo apenas alterado se tiver algo a ser convertido*/
+}
+/*--------------------------------------
+| Nome: reconhece_comandos_primeira_etapa
+| Accao: dados o argc, o argv e um vetor auxiliar de inteiros, a funcao vai percorrer todos os argumentos dados e procurar: 
+| -a presenca ou ausencia dos parametros (os primeiros 6 elementos do vetor vao servir como booleanos ou flags, ou seja, ficam a 0 se nao estiver, a 1 se estiver, estando cada elemento atribuido a um parametro atraves de defines no headertrabalho2.h)
+| -se o parametro necessitar de mais "subparametros", verificar que estes podem estar presentes 'a frente do parametro (com a funcao erro) 
++---------------------------------------*/
+void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUMERO_PARAMETROS]){
+    int i;
+    int retorno_sscanf;
+    int erro = 0;
+    /*Inicia todos os elementos do vetor argumento a zero.*/
     for(i = 0;i < NUMERO_PARAMETROS; i++)
         argumento[i] = 0;
-    NUMERO_ROTA = SEM_ROTA;
     
     for (i=1; i<argc ; i = i+1){
         if (strcmp(argv[i],"-TL")==0)
@@ -644,8 +700,8 @@ void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUM
             argumento[ROTAS] = 1;
             /*Como pode ou nao ter algo 'a frente a especificar o numero da rota a processar, nao vai haver verificacao de erros aqui!O if abaixo desempenha essa tarefa*/
             ROTAS_POS_NUMERO_ROTA = i + 1;
-            if(ROTAS_POS_NUMERO_ROTA <= argc)
-                sscanf(argv[ROTAS_POS_NUMERO_ROTA], "%d", &(NUMERO_ROTA));
+            if(ROTAS_POS_NUMERO_ROTA < argc)
+                retorno_sscanf = sscanf(argv[ROTAS_POS_NUMERO_ROTA], "%d", &(NUMERO_ROTA));
         }
 
         if (strcmp(argv[i],"-LR")==0){
@@ -672,6 +728,11 @@ void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUM
     /*Ao fim do loop, verificar se houve pelo menos um erro. Se houver, o programa mostra a utilizacao e termina*/
     if(erro > 0){
         mostrar_utilizacao();
+        exit(-1);
+    }
+    /*Verificar se, caso seja o comando 4 especificando a rota, o programa conseguiu ler o numero da rota a processar da linha de comandos*/
+    if(FLAGS_ON3(LO, ROTAS, LR) && (argc == 7) && (retorno_sscanf == 0)){
+        fprintf(stderr, "-ROTAS: ERRO: para 6 parametros, espera-se que o -ROTAS (comando 4 do enunciado) tenha 'a sua frente um numero de rota especificado, no entanto nao foi possivel encontra-lo!\n");
         exit(-1);
     }
 }
@@ -704,7 +765,9 @@ CIDADE reconhece_comandos_segunda_etapa(char * argv[], int argumento[NUMERO_PARA
         erro = 1;
     }
 
-    strcpy(cidade_aux.nome, argv[ADI_POS_NOME]);
+    if(argumento[ADI])
+        strcpy(cidade_aux.nome, argv[ADI_POS_NOME]);
+    
     if(argumento[ADI] && !sera_letra(argv[ADI_POS_NOME][0])){
         fprintf(stderr,"-ADI: ERRO: faltou fornecer o nome da cidade a adicionar depois do -ADI!O nome de uma cidade comeca com uma letra!\n");
         erro = 1;
@@ -715,7 +778,10 @@ CIDADE reconhece_comandos_segunda_etapa(char * argv[], int argumento[NUMERO_PARA
         erro = 1;
     }
 
-    if(argumento[REM] && !sera_letra(argv[REM_POS_NOME])){
+    if(argumento[REM])
+        strcpy(cidade_aux.nome, argv[REM_POS_NOME]);
+    
+    if(argumento[REM] && !sera_letra(argv[REM_POS_NOME][0])){
         fprintf(stderr,"-REM: ERRO: faltou fornecer o nome da cidade a remover depois do -REM!O nome de uma cidade comeca com uma letra!\n");
         erro = 1;
     }
@@ -728,20 +794,36 @@ CIDADE reconhece_comandos_segunda_etapa(char * argv[], int argumento[NUMERO_PARA
     return cidade_aux;
 }
 
-void explica_relacao_argc_comando(int argc){
+void reconhece_comandos_terceira_etapa(int argc, int argumento[NUMERO_PARAMETROS]){
+    int erro = 0;
     switch(argc){
         case 4:
-            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO com -TL!\n", argc - 1);
+            if(FLAGS_OFF2(TL, LO)){
+                fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO com -TL!\n", argc - 1);
+                erro = 1;
+            }
             break;
         case 5:
-            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO com -REM!\n", argc - 1);
+            if(FLAGS_OFF2(LO, REM)){
+                fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO com -REM!\n", argc - 1);
+                erro = 1;
+            }
             break;
         case 6:
-            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO, -ROTAS sem especificar rota e -LR!\n", argc - 1);
+            if(FLAGS_OFF3(LO, ROTAS, LR)){
+                fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se apenas o uso de -LO, -ROTAS sem especificar rota e -LR!\n", argc - 1);
+                erro = 1;
+            }
             break;
         case 7:
-            fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se ou o uso de -LO, -LR e -ROTAS especificando a rota ou o uso de -LO e -ADI!\n", argc - 1);
+            if(FLAGS_OFF3(LO, ROTAS, LR) && FLAGS_OFF2(LO, ADI)){
+                fprintf(stderr, "ERRO: parametros incorretos! Para %d parametros espera-se ou o uso de -LO, -LR e -ROTAS especificando a rota ou o uso de -LO e -ADI!\n", argc - 1);
+                erro = 1;
+            }
             break;
     }
-    mostrar_utilizacao();
+    if(erro){
+        mostrar_utilizacao();
+        exit(-1);
+    }
 }

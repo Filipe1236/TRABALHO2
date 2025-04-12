@@ -6,23 +6,28 @@ Filipe Braz Gomes n.114217
 LEAer2021
 -------------------------------------------------------------------------*/
 #ifndef HEADER_TRAB2
-
 #define HEADER_TRAB2
 
+/*Constantes simbolicas:*/
 #define MAX 30
 #define CONTADOR_LINHA_ADI -1 /*Usar quando for para adicionar a cidade extra do -ADI 'a lista!*/
-#define SSCANF_LOCALIDADES sscanf(buffer,"%s %f %f", cidade_intermediaria.nome, &(cidade_intermediaria.latitude), &(cidade_intermediaria.longitude))
-#define SSCANF_LATITUDE sscanf(argv[ADI_POS_LATITUDE], "%f", &(cidade_aux.latitude))
-#define SSCANF_LONGITUDE sscanf(argv[ADI_POS_LONGITUDE], "%f", &(cidade_aux.longitude))
-
 #define RT 6371.0 /*Raio medio da Terra em km*/
 #define PI 3.14159
 
-/*DEFINES PARA OS ARGUMENTOS DA MAIN------------------------*/
-#define SEM_ROTA -22334455
+/*Macros que substituem funcoes longas nas expressoes dentro dos if's:*/
+#define SSCANF_LOCALIDADES sscanf(buffer,"%s %f %f", cidade_intermediaria.nome, &(cidade_intermediaria.latitude), &(cidade_intermediaria.longitude))
+#define SSCANF_LATITUDE sscanf(argv[ADI_POS_LATITUDE], "%f", &(cidade_aux.latitude))
+#define SSCANF_LONGITUDE sscanf(argv[ADI_POS_LONGITUDE], "%f", &(cidade_aux.longitude))
+/*Macros que servem como funcoes*/
+#define FLAGS_ON2(x, y) (argumento[(x)] && argumento[(y)])
+#define FLAGS_OFF2(x, y) (!argumento[(x)] || !argumento[(y)])
+#define FLAGS_ON3(x, y, z) (argumento[(x)] && argumento[(y)] && argumento[(z)])
+#define FLAGS_OFF3(x, y, z) (!argumento[(x)] || !argumento[(y)] || !argumento[(z)])
+/*Estes macros formam condicoes em que se verificam todos os argumentos (FLAGS_ON) ou em que nao se verifica pelo menos um deles (FLAGS_OFF)*/
 
+/*DEFINES PARA OS ARGUMENTOS DA MAIN------------------------*/
 #define NUMERO_PARAMETROS 14
-/*Os primeiros 6 elementos do vetor vao servir como booleanos para detetar se o argumento esta' ou nao presente. 
+/*Os primeiros 6 elementos do vetor vao servir como booleanos/flags para detetar se o argumento esta' ou nao presente. 
 Ou seja, ficam a 0 se nao estiver, a 1 se estiver*/
 #define TL 0
 #define LO 1
@@ -30,7 +35,6 @@ Ou seja, ficam a 0 se nao estiver, a 1 se estiver*/
 #define REM 3
 #define ROTAS 4
 #define LR 5
-
 /*Os ultimos elementos vao indicar a posicao no argv em que dados auxiliares associados a um comando se encontram.
 Por exemplo, argv[LO_POS_NOME_FICHEIRO] vai ser um apontador da string que tem o nome fornecido para o ficheiro de output logo apos o -LO*/
 #define LO_POS_NOME_FICHEIRO argumento[6]
@@ -43,7 +47,7 @@ Por exemplo, argv[LO_POS_NOME_FICHEIRO] vai ser um apontador da string que tem o
 #define NUMERO_ROTA argumento[13]
 /*FIM DOS DEFINES DOS ARGUMENTOS---------------------------------*/
 
-/*#define procurar_cidade_atual(x, y) ((procurar_cidade(x, y))->prox)*/ /*Apenas uma ideia de macro que pode vir a ser util*/
+
 /*------------------DEFINICOES DE TIPOS--------------*/
 typedef struct {
     char nome[MAX];
@@ -70,6 +74,7 @@ typedef struct rota{
 } ROTA;
 
 /*------------------FIM DAS DEFINICOES DE TIPOS--------------*/
+
 
 /*--------------PROTOTIPOS DE FUNCOES-------------------------*/
 void mostrar_utilizacao(void);
@@ -104,5 +109,14 @@ ROTA * criar_lista_rotas(void);
 SUBROTA * criar_lista_subrotas(BLOCOCIDADE * lista_cidades);
 void mostrar_lista_rotas(ROTA * lista);
 void tirar_newline(char str[]);
+
+void explica_relacao_argc_comando(int argc);
+void libertar_lista_rotas(ROTA **lista);
+void libertar_lista_subrotas(SUBROTA **lista);
+void output_lista_rotas(ROTA *lista, char nome_ficheiro[]);
+void output_rota_unica(ROTA *lista, char nome_ficheiro[], int numero_rota);
+void reconhece_comandos_primeira_etapa(int argc, char *argv[], int argumento[NUMERO_PARAMETROS]);
+CIDADE reconhece_comandos_segunda_etapa(char *argv[], int argumento[NUMERO_PARAMETROS]);
+ROTA * procurar_rota(ROTA * lista_rotas, int numero_rota_procurada);
 
 #endif

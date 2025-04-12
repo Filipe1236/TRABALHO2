@@ -17,57 +17,43 @@ int main(int argc, char * argv[]){
     BLOCOCIDADE * lista_cidades;
     ROTA * lista_rotas = NULL;
     int argumento[NUMERO_PARAMETROS];
-    CIDADE cidade_ADI_REM;
+    CIDADE cidade_por_adicionar_remover;
     /*------------instrucoes que sao comuns a todos os comandos-------------------*/
+    intervalo_argc_valido(argc);
     reconhece_comandos_primeira_etapa(argc, argv, argumento);
-    cidade_ADI_REM = reconhece_comandos_segunda_etapa(argv, argumento);
+    cidade_por_adicionar_remover = reconhece_comandos_segunda_etapa(argv, argumento);
+    reconhece_comandos_terceira_etapa(argc, argumento);
     lista_cidades = TL_ler_cidades(argumento[TL]);
-    
-    switch(argc){
-        case 4:
-            /*verifica se os parametros estao incorretos para o argc*/
-            if(!argumento[LO] || !argumento[TL])
-                explica_relacao_argc_comando(argc);
-            /*Se os parametros forem so' o -LO e o -TL, executa o comando. Nao ha' risco de haver um terceiro parametro, olhar para as funcoes reconhece_comandos*/
-            else
-                LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
-            break;
-
-        case 5:
-            if(argumento[LO] && argumento[REM]){
-                remover_da_listacidades(lista_cidades, cidade_ADI_REM.nome);
-                LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
-            }
-            else
-                explica_relacao_argc_comando(argc);
-            break;
-
-        case 6:
-            if(argumento[LO] && argumento[ROTAS] && argumento[LR]){
-                LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
-                lista_rotas = ciclo_leitura_rotas(lista_cidades);
-                output_lista_rotas(lista_rotas, argv[LR_POS_NOME_FICHEIRO]);
-            }
-            else
-                explica_relacao_argc_comando(argc);
-            break;
-        
-        case 7:
-            if(argumento[LO] && argumento[ADI]){
-                insere_na_lista_cidades_alfabeticamente(lista_cidades, cidade_ADI_REM, CONTADOR_LINHA_ADI, argumento[TL]);
-                LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
-            }
-            else if(argumento[LO] && argumento[ROTAS] && argumento[LR]){
-                LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
-                lista_rotas = ciclo_leitura_rotas(lista_cidades);
-                processar_rota_unica(lista_rotas, argv[LR_POS_NOME_FICHEIRO], NUMERO_ROTA);
-            }
-            else
-                explica_relacao_argc_comando(argc);
-            break;
+    /*-------------instrucoes de cada comando--------------------------*/
+    /*Comando 1 do enunciado ./processa_rotas -LO output1.txt -TL
+    (os testes do TL ja sao feitos no TL_ler_cidades ao passar 1 como argumento, nos restantes sem TL, passa-se 0 pela funcao, deixando de haver mensagens de avisos/erros)*/
+    if(FLAGS_ON2(LO, TL))
+        LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
+    /*Comando 2 do enunciado ./processa_rotas -LO output1.txt -ADI <nome> <latitude> <longitude>*/
+    if(FLAGS_ON2(LO, ADI) && !validar_coordenadas(cidade_por_adicionar_remover)){
+        insere_na_lista_cidades_alfabeticamente(lista_cidades, cidade_por_adicionar_remover, CONTADOR_LINHA_ADI, argumento[TL]);
+        LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
     }
+
+    /*Comando 3 do enunciado ./processa_rotas -LO output1.txt -REM <nome>*/
+    if(FLAGS_ON2(LO, REM)){
+        remover_da_listacidades(lista_cidades, cidade_por_adicionar_remover.nome);
+        LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
+    }
+
+    /*Comando 4 do enunciado ./processa_rotas -LO output1.txt -LR output2.txt -ROTAS <nome>
+    O argc foi aproveitado para fazer a distincao entre o comando em que se especifica a rota e o que nao especifica*/
+    if(FLAGS_ON3(LO, ROTAS, LR)){
+        LO_escrever_cidades(argv[LO_POS_NOME_FICHEIRO], lista_cidades);
+        lista_rotas = ciclo_leitura_rotas(lista_cidades);
+        if(argc == 6)
+            output_lista_rotas(lista_rotas, argv[LR_POS_NOME_FICHEIRO]);
+        if(argc == 7)
+            output_rota_unica(lista_rotas, argv[LR_POS_NOME_FICHEIRO], NUMERO_ROTA);
+    }
+
     /*libertar memoria!*/
     libertar_lista(&lista_cidades);
-    libertar_lista_rotas(lista_rotas);
+    libertar_lista_rotas(&lista_rotas);
     return 0;
 }
